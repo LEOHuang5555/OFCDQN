@@ -9,86 +9,131 @@ import numpy as np
 class OFCEnv(object):
     """Handle an OFC game in a manner condusive to PG RL."""
 
-    def __init__(self, opponent_1, num_opponent = 1, fantacy_state = [0, 0, 0], encoder_class=None):
+    def __init__(self, opponent_1, opponent_2 = None, num_opponent = 1, fantacy_state = [0, 0, 0], encoder_class=None):
         self.num_oppo = num_opponent
         if encoder_class is not None:
             self.encoder = encoder_class()
 
         if self.num_oppo == 1:
             # 2 players, 1 opponent
-            self.opponent_1 = opponent_1
+            self.opponent = opponent_1
             self.plyr_fantasy = fantacy_state[0]
             self.oppo_fantasy = fantacy_state[1]
         
         if self.num_oppo == 2:
             # 3 players, 2 opponents
+            self.opponent = opponent_1
+            self.opponent2 = opponent_2
+            self.plyr_fantasy = fantacy_state[0]
+            self.oppo_fantasy = fantacy_state[1]
+            self.oppo2_fantasy = fantacy_state[2]
             
-            pass
 
         self.reset()
 
 
     def reset(self):
-        if self.plyr_fantasy > 0 and self.oppo_fantasy == 0:
-            # player in state of fantasy
-            self.plyr_board = OFCBoard()
-            self.oppo_board = OFCBoard()
-            self.i = 10
-            self.drop_card = []
-
-            self.game_over = False
-            self.reward = 0
-
-            self.deck = DeckGenerator.new_deck()
-            # self.plyr_cards = sorted(self.deck[0:5])
-            # self.oppo_cards = sorted(self.deck[5:10])
-            # self.fantasy_draw = 
-            self.plyr_cards = sorted(self.deck[0:self.plyr_fantasy])
-            self.oppo_cards = sorted(self.deck[self.plyr_fantasy:self.plyr_fantasy+5])
-
-            # each round draw three card from the deck, players have to choose 2 from 3 and drop the additional 1.
-            self.plyr_goes_first = 0
-
-            if self.plyr_goes_first == 0:
-                # oppo goes first
-                self.current_card = self.oppo_cards
-                self.execute_opponent_turn()
-            
-            else:
-                # I go first
-                self.current_card = self.plyr_cards
-                self.execute_my_turn()
-
         if self.num_oppo == 1:
-            self.plyr_board = OFCBoard()
-            self.oppo_board = OFCBoard()
-            self.i = 10
-            self.drop_card = []
+            if self.plyr_fantasy > 0 and self.oppo_fantasy == 0:
+                # player in state of fantasy
+                self.plyr_board = OFCBoard()
+                self.oppo_board = OFCBoard()
+                self.i = self.plyr_fantasy+5
+                self.drop_card = []
 
-            self.game_over = False
-            self.reward = 0
+                self.game_over = False
+                self.reward = 0
 
-            self.deck = DeckGenerator.new_deck()
-            # self.plyr_cards = sorted(self.deck[0:5])
-            # self.oppo_cards = sorted(self.deck[5:10])
-            self.plyr_cards = sorted(self.deck[0:5])
-            self.oppo_cards = sorted(self.deck[5:10])
+                self.deck = DeckGenerator.new_deck()
+                self.plyr_cards = sorted(self.deck[0:self.plyr_fantasy])
+                self.oppo_cards = sorted(self.deck[self.plyr_fantasy:self.plyr_fantasy+5])
 
-            # self.current_card = self.plyr_cards.pop()
-            # each round draw three card from the deck, players have to choose 2 from 3 and drop the additional 1.
-             
+                self.plyr_goes_first = 0
 
-            self.plyr_goes_first = random.choice([0, 1])
-
-            if self.plyr_goes_first == 0:
-                # oppo goes first
-                self.current_card = self.oppo_cards
-                self.execute_opponent_turn()
+                if self.plyr_goes_first == 0:
+                    # oppo goes first
+                    self.current_card = self.oppo_cards
+                    self.execute_opponent_turn()
+                
+                else:
+                    # I go first
+                    self.current_card = self.plyr_cards
+                    self.execute_my_turn()
             
+            elif self.plyr_fantasy == 0 and self.oppo_fantasy > 0:
+                # player in state of fantasy
+                self.plyr_board = OFCBoard()
+                self.oppo_board = OFCBoard()
+                self.i = self.oppo_fantasy+5
+                self.drop_card = []
+
+                self.game_over = False
+                self.reward = 0
+
+                self.deck = DeckGenerator.new_deck()
+                self.oppo_cards = sorted(self.deck[0:self.oppo_fantasy])
+                self.plyr_cards = sorted(self.deck[self.oppo_fantasy:self.oppo_fantasy+5])
+
+                self.plyr_goes_first = 1
+
+                if self.plyr_goes_first == 0:
+                    # oppo goes first
+                    self.current_card = self.oppo_cards
+                    self.execute_opponent_turn()
+                
+                else:
+                    # I go first
+                    self.current_card = self.plyr_cards
+                    self.execute_my_turn()
+
+            elif self.plyr_fantasy > 0 and self.oppo_fantasy > 0:
+                # player in state of fantasy
+                self.plyr_board = OFCBoard()
+                self.oppo_board = OFCBoard()
+                self.i = self.plyr_fantasy+5
+                self.drop_card = []
+
+                self.game_over = False
+                self.reward = 0
+
+                self.deck = DeckGenerator.new_deck()
+                self.plyr_cards = sorted(self.deck[0:self.plyr_fantasy])
+                self.oppo_cards = sorted(self.deck[self.plyr_fantasy:self.plyr_fantasy+self.oppo_fantasy])
+
+                # place_by_fantasy_rule
+                self.plyr_board.place_card_by_fantasy_rule(self.plyr_cards)
+                self.oppo_board.place_card_by_fantasy_rule(self.oppo_cards)
+                
             else:
-                # I go first
-                self.current_card = self.plyr_cards
-                self.execute_my_turn()
+                # normal condition
+                self.plyr_board = OFCBoard()
+                self.oppo_board = OFCBoard()
+                self.i = 10
+                self.drop_card = []
+
+                self.game_over = False
+                self.reward = 0
+
+                self.deck = DeckGenerator.new_deck()
+                self.plyr_cards = sorted(self.deck[0:5])
+                self.oppo_cards = sorted(self.deck[5:10])             
+
+                self.plyr_goes_first = random.choice([0, 1])
+
+                if self.plyr_goes_first == 0:
+                    # oppo goes first
+                    self.current_card = self.oppo_cards
+                    self.execute_opponent_turn()
+                
+                else:
+                    # I go first
+                    self.current_card = self.plyr_cards
+                    self.execute_my_turn()
+
+
+        else:
+            
+            pass
 
     def draw(self):
         drop = random.choice([0, 1, 2])
@@ -123,8 +168,7 @@ class OFCEnv(object):
             #     self.current_card = None
             #     self.execute_endgame()\
         
-
-        if self.board_sum(0) == 13 and self.board_sum(0) == 13:
+        if self.board_sum(0) == 13 and self.board_sum(1) == 13:
             self.execute_endgame()
 
         if self.plyr_goes_first == 0:
@@ -134,10 +178,19 @@ class OFCEnv(object):
         else:
             # I go first
             self.execute_my_turn(action)
+
+        if self.plyr_fantasy > 0 and self.board_sum(1) == 13:
+            self.plyr_board.place_card_by_fantasy_rule(self.plyr_cards)
+
+        if self.oppo_fantasy > 0 and self.board_sum(0) == 13:
+            self.oppo_board.place_card_by_fantasy_rule(self.oppo_cards)
     
     def board_sum(self, player_code):
         if player_code == 0:
             return self.plyr_board.front.length()+self.plyr_board.mid.length()+self.plyr_board.back.length()
+        
+        elif player_code == 1:
+            return self.oppo_board.front.length()+self.oppo_board.mid.length()+self.oppo_board.back.length()
         
         else:
             return self.oppo_board.front.length()+self.oppo_board.mid.length()+self.oppo_board.back.length()
@@ -145,16 +198,25 @@ class OFCEnv(object):
 
     def observe(self):
         """Return information about the game state."""
-        game_state = (self.plyr_board,
-                      self.oppo_board,
-                      self.current_card,  # Current decision card
-                      self.plyr_cards,    # i.e. remaining starting hand
-                      self.game_over,     # Whether the game is over
-                      self.reward)        # Score, or None
+        if self.num_oppo == 1:
+            game_state = (self.plyr_board,
+                        self.oppo_board,
+                        self.current_card,  # Current decision card
+                        self.plyr_cards,    # i.e. remaining starting hand
+                        self.game_over,     # Whether the game is over
+                        self.reward)        # Score, or None
+            
+        else:
+            game_state = (self.plyr_board,
+                        self.oppo_board,
+                        self.current_card,  # Current decision card
+                        self.plyr_cards,    # i.e. remaining starting hand
+                        self.game_over,     # Whether the game is over
+                        self.reward)        # Score, or None
         
         return game_state
 
-    def execute_opponent_turn(self, action):
+    def execute_opponent_turn(self, action=None):
         if not self.oppo_board.is_complete():
             if len(self.oppo_cards) == 0:
                 self.draw()
@@ -169,8 +231,11 @@ class OFCEnv(object):
                 self.oppo_board.place_card_by_id(oppo_card, oppo_action)
 
             # change
-            if 
-            self.plyr_goes_first = 1
+            if self.plyr_fantasy > 0 and self.oppo_fantasy == 0 and self.board_sum(1) < 13:
+                self.plyr_goes_first = 0
+
+            else:
+                self.plyr_goes_first = 1
 
         
     
@@ -189,8 +254,12 @@ class OFCEnv(object):
                 self.plyr_board.place_card_by_id(plyr_card, plyr_action)
 
             # change
-            self.plyr_goes_first = 0
+            if self.plyr_fantasy == 0 and self.oppo_fantasy > 0 and self.board_sum(0) < 13:
+                self.plyr_goes_first = 1
 
+            else:
+                self.plyr_goes_first = 0
+            
         
 
     def execute_endgame(self):

@@ -88,6 +88,9 @@ class OFCBoard(object):
         if street_id == 2:
             self.back.add_card(card)
 
+    def place_card_by_fantasy_rule(self, card):
+        print('Fantasy rule')
+
     def is_complete(self):
         if self.back.length() == 5 and \
                 self.mid.length() == 5 and \
