@@ -1,6 +1,6 @@
 from treys import Card
-from rlofc.rlofc.royalty_calculator import RoyaltyCalculator
-from rlofc.rlofc.ofc_evaluator import OFCEvaluator
+from rlofc.royalty_calculator import RoyaltyCalculator
+from rlofc.ofc_evaluator import OFCEvaluator
 
 
 evaluator = OFCEvaluator()
@@ -16,6 +16,7 @@ class OFCHand(object):
 
     def add_card(self, new_card_str):
         # if len(new_card_str)==1:
+        # print(new_card_str)
         self.cards.append(Card.new(new_card_str))
 
         # else:
@@ -106,13 +107,50 @@ class OFCBoard(object):
         return True
     
     def is_fantasy(self):
-        if self.is_foul():
-            return False
-        
+        next_open = 0
         if self.front.get_rank() >= \
                 self.mid.get_rank() >= \
                 self.back.get_rank():
-            return True
-        
-        return False
+            
+            if self.front.get_rank() >= 2468.0:
+                # 2468: 222 three of a kind. 
+                next_open = 17
+            
+            elif self.front.get_rank() <= 3985.899 and self.front.get_rank() > 3765.8889:
+                # 3985.899: QQ pair + 2c
+                # 3765.8889: KK pair + 2c
+                next_open = 14
 
+            elif self.front.get_rank() <= 3765.8889 and self.front.get_rank() > 3545.8788:               
+                # 3765.8889: KK pair + 2c
+                # 3545.8788: AA pair + 2c
+                next_open = 15
+            
+            elif self.front.get_rank() <= 3545.8788 and self.front.get_rank() > 2468.0:
+                # 3545.8788: AA pair + 2c
+                # 2468.0: 222 three of a kind.
+                next_open = 16
+            
+            else:
+                pass
+
+        return next_open
+
+# fantasy_cards = {
+#     'QQ':14,
+#     'KK':15,
+#     'AA':16,
+#     '222':17,
+#     '333':17,
+#     '444':17,
+#     '555':17,
+#     '666':17,
+#     '777':17,
+#     '888':17,
+#     '999':17,
+#     'TTT':17,
+#     'JJJ':17,
+#     'QQQ':17,
+#     1741.888889:17,
+#     1675.878788:17
+# }
