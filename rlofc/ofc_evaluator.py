@@ -12,7 +12,8 @@ class StrToBytes:
     def readline (self, size=-1):
         return self.fileobj. readline(size).encode()
     
-FRONT_LOOKUP = pickle.load(StrToBytes(open("rlofc/res/front_lookup.p", 'r')))
+FRONT_LOOKUP = pickle.load(StrToBytes(open("./res/front_lookup.p", 'r')))
+
 
 
 # FRONT_LOOKUP = pickle.load(open("res/front_lookup.p"))

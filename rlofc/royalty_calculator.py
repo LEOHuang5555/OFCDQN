@@ -1,6 +1,6 @@
 import collections
 from treys import Card
-from rlofc.rlofc.ofc_evaluator import OFCEvaluator
+from rlofc.ofc_evaluator import OFCEvaluator
 
 evaluator = OFCEvaluator()
 
