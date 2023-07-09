@@ -1,6 +1,7 @@
 from treys import Card
 from rlofc.royalty_calculator import RoyaltyCalculator
 from rlofc.ofc_evaluator import OFCEvaluator
+from .fantasy import get_all_fantasy_combo
 
 
 evaluator = OFCEvaluator()
@@ -51,6 +52,9 @@ class OFCBoard(object):
 
     def get_royalties(self):
         if not self.is_complete():
+            return 0
+        
+        if self.is_foul():
             return 0
 
         royalty_total = \
