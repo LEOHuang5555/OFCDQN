@@ -1,6 +1,8 @@
 import random
 # from rlofc.deck_generator import DeckGenerator
 # from rlofc.ofc_board import OFCBoard
+from treys import Card
+from .ofc_evaluator import OFCEvaluator
 from rlofc.deck_generator import  DeckGenerator
 from rlofc.ofc_board import OFCBoard
 import numpy as np
@@ -228,12 +230,16 @@ class OFCEnv(object):
             if self.board_sum(0) == 13 and self.board_sum(1) == 13:
                 self.execute_endgame()
 
+            else:
+                self.execute_game()
+
         else:
             if self.board_sum(0) == 13 and self.board_sum(1) == 13 and self.board_sum(2) == 13:
                 self.execute_endgame()
 
-
-        self.execute_game()
+            else:
+                self.execute_game()
+        
 
         
     
@@ -495,6 +501,7 @@ class OFCEnv(object):
 
 
     def calculate_score(self):
+        self.calculate_joker()
         if self.num_oppo == 1:
             plyr_royalties = self.plyr_board.get_royalties()
             oppo_royalties = self.oppo_board.get_royalties()
@@ -533,6 +540,82 @@ class OFCEnv(object):
                 score = each + plyr_royalties - oppo_royalties - oppo1_royalties
 
         return score
+    
+    def calculate_joker(self):
+        # jocker in the front line
+        if 'g' in self.plyr_board.front.cards or 'G' in  self.plyr_board.front.cards:
+            if 'g' in self.plyr_board.mid.cards or 'G' in self.plyr_board.mid.cards:
+                self.plyr_board.mid.cards = get_max_hand(self.plyr_board.mid.cards ,self.plyr_board.back.cards)
+                self.plyr_board.front.cards = get_max_hand(self.plyr_board.front.cards ,self.plyr_board.mid.cards)
+            else:
+                self.plyr_board.front.cards = get_max_hand(self.plyr_board.front.cards ,self.plyr_board.mid.cards)
+
+        # jocker in the middle line
+        if 'g' in self.plyr_board.mid.cards or 'G' in  self.plyr_board.mid.cards:
+            if 'g' in self.plyr_board.back.cards or 'G' in self.plyr_board.back.cards:
+                self.plyr_board.back.cards = get_max_hand(self.plyr_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
+                self.plyr_board.mid.cards = get_max_hand(self.plyr_board.mid.cards, self.plyr_board.back.cards)
+            else:
+                self.plyr_board.mid.cards = get_max_hand(self.plyr_board.mid.cards ,self.plyr_board.back.cards)
+
+        # jocker in the back line
+        if 'g' in self.plyr_board.back.cards or 'G' in self.plyr_board.back.cards:
+            self.plyr_board.back.cards = get_max_hand(self.plyr_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
+        
+        # jocker in the front line
+        if 'g' in self.oppo_board.front.cards or 'G' in  self.oppo_board.front.cards:
+            if 'g' in self.oppo_board.mid.cards or 'G' in self.oppo_board.mid.cards:
+                self.oppo_board.mid.cards = get_max_hand(self.oppo_board.mid.cards ,self.oppo_board.back.cards)
+                self.oppo_board.front.cards = get_max_hand(self.oppo_board.front.cards ,self.oppo_board.mid.cards)
+            else:
+                self.oppo_board.front.cards = get_max_hand(self.oppo_board.front.cards ,self.oppo_board.mid.cards)
+
+        # jocker in the middle line
+        if 'g' in self.oppo_board.mid.cards or 'G' in  self.oppo_board.mid.cards:
+            if 'g' in self.oppo_board.back.cards or 'G' in self.oppo_board.back.cards:
+                self.oppo_board.back.cards = get_max_hand(self.oppo_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
+                self.oppo_board.mid.cards = get_max_hand(self.oppo_board.mid.cards, self.oppo_board.back.cards)
+            else:
+                self.oppo_board.mid.cards = get_max_hand(self.oppo_board.mid.cards ,self.oppo_board.back.cards)
+        
+        # jocker in the back line
+        if 'g' in self.oppo_board.back.cards or 'G' in self.oppo_board.back.cards:
+            self.oppo_board.back.cards = get_max_hand(self.oppo_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
+
+        self.plyr_board.front.cards = [Card.new(i) for i in self.plyr_board.front.cards]
+        self.plyr_board.mid.cards = [Card.new(i) for i in self.plyr_board.mid.cards]
+        self.plyr_board.back.cards = [Card.new(i) for i in self.plyr_board.back.cards]
+        self.oppo_board.front.cards = [Card.new(i) for i in self.oppo_board.front.cards]
+        self.oppo_board.mid.cards = [Card.new(i) for i in self.oppo_board.mid.cards]
+        self.oppo_board.back.cards = [Card.new(i) for i in self.oppo_board.back.cards]
+            
+        if self.num_oppo == 2:
+            # jocker in the front line
+            if 'g' in self.oppo1_board.front.cards or 'G' in  self.oppo1_board.front.cards:
+                if 'g' in self.oppo1_board.mid.cards or 'G' in self.oppo1_board.mid.cards:
+                    self.oppo1_board.mid.cards = get_max_hand(self.oppo1_board.mid.cards ,self.oppo1_board.back.cards)
+                    self.oppo1_board.front.cards = get_max_hand(self.oppo1_board.front.cards ,self.oppo1_board.mid.cards)
+                else:
+                    self.oppo1_board.front.cards = get_max_hand(self.oppo1_board.front.cards ,self.oppo1_board.mid.cards)
+
+            # jocker in the middle line
+            if 'g' in self.oppo1_board.mid.cards or 'G' in  self.oppo1_board.mid.cards:
+                if 'g' in self.oppo1_board.back.cards or 'G' in self.oppo1_board.back.cards:
+                    self.oppo1_board.back.cards = get_max_hand(self.oppo1_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
+                    self.oppo1_board.mid.cards = get_max_hand(self.oppo1_board.mid.cards, self.oppo1_board.back.cards)
+                else:
+                    self.oppo1_board.mid.cards = get_max_hand(self.oppo1_board.mid.cards ,self.oppo1_board.back.cards)
+            
+            # jocker in the back line
+            if 'g' in self.oppo1_board.back.cards or 'G' in self.oppo1_board.back.cards:
+                self.oppo1_board.back.cards = get_max_hand(self.oppo1_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
+
+
+            self.oppo1_board.front.cards = [Card.new(i) for i in self.oppo1_board.front.cards]
+            self.oppo1_board.mid.cards = [Card.new(i) for i in self.oppo1_board.mid.cards]
+            self.oppo1_board.back.cards = [Card.new(i) for i in self.oppo1_board.back.cards]
+        
+
 
     def calculate_scoop(self, plyr_board, oppo_board, oppo1_board = None):
         lhs_won = 0
@@ -571,83 +654,145 @@ class OFCEnv(object):
             return -1
         return 0
 
+evaluator = OFCEvaluator()
 
-class OFCEnvironment(object):
-    """Handle OFC game state and rewards."""
+def bigger_or_not(current_hand_list,max_hand_list):
+    current_hand_score = evaluator.evaluate([],[Card.new(i) for i in current_hand_list])
+    max_hand_score = evaluator.evaluate([],[Card.new(i) for i in max_hand_list])
+    if current_hand_score < max_hand_score:
+        return True
+    else:
+        return False
 
-    def __init__(self, lhs_agent, rhs_agent):
-        self.lhs_agent = lhs_agent
-        self.rhs_agent = rhs_agent
+def smaller_or_not(current_hand_list,limit_hand_list):
+    current_hand_score = evaluator.evaluate([],[Card.new(i) for i in current_hand_list])
+    limit_hand_score = evaluator.evaluate([],[Card.new(i) for i in limit_hand_list])
+    if current_hand_score > limit_hand_score:
+        return True
+    else:
+        return False
 
-    def play_game(self):
-        """Rollout one OFC game and return the LHS score and LHS/RHS boards."""
-        deck = DeckGenerator.new_deck()
+def get_max_hand(input_hand_list,limit_hand_list):
+    hand_list = input_hand_list.copy()
+    gost_list = []
+    for hand in hand_list:
+        if(hand == 'G' or hand == 'g'):
+            gost_list.append(hand)
 
-        lhs_board = OFCBoard()
-        rhs_board = OFCBoard()
+    if 'g' in hand_list:
+        hand_list.remove("g")
+    
+    if 'G' in hand_list:
+        hand_list.remove("G")
 
-        lhs_start = deck[0:5]
-        rhs_start = deck[6:11]
+    all_cards = [
+    '2s', '3s', '4s', '5s', '6s', '7s', '8s', '9s', 'Ts', 'Js', 'Qs', 'Ks', 'As',
+    '2h', '3h', '4h', '5h', '6h', '7h', '8h', '9h', 'Th', 'Jh', 'Qh', 'Kh', 'Ah',
+    '2d', '3d', '4d', '5d', '6d', '7d', '8d', '9d', 'Td', 'Jd', 'Qd', 'Kd', 'Ad',
+    '2c', '3c', '4c', '5c', '6c', '7c', '8c', '9c', 'Tc', 'Jc', 'Qc', 'Kc', 'Ac']
 
-        # Starting hand one card at a time for now. In future, give
-        # all cards at once
-        for i in xrange(5):
-            card = lhs_start[i]
-            street_id = self.lhs_agent.place_new_card(card, lhs_board)
-            lhs_board.place_card_by_id(card, street_id)
+    if(len(gost_list) == 1):
+        max_hand_list = ['2c','3c','4c','5c','7d']
+        for h in all_cards:
+            if(h in hand_list):
+                break
+            a_list = hand_list.copy()
+            a_list.append(h)
+            #print(a_list)
+            #print(max_hand_list)
+            #print(bigger_or_not(a_list,max_hand_list))
+            if(bigger_or_not(a_list,max_hand_list) and smaller_or_not(a_list,limit_hand_list)):
+                max_hand_list = a_list
+        return max_hand_list
+    elif(len(gost_list) == 2):
+        max_hand_list = ['2c','3c','4c','5c','7d']
+        for h in all_cards:
+            for h1 in all_cards:
+                a_list = hand_list.copy()
+                a_list.append(h)
+                a_list.append(h1)
+                if(bigger_or_not(a_list,max_hand_list) and smaller_or_not(a_list,limit_hand_list)):
+                    max_hand_list = a_list
+        return max_hand_list
 
-            card = rhs_start[i]
-            street_id = self.rhs_agent.place_new_card(card, rhs_board)
-            rhs_board.place_card_by_id(card, street_id)
 
-        # Eight cards one at a time
-        for i in xrange(8):
-            card = deck.pop()
-            street_id = self.lhs_agent.place_new_card(card, lhs_board)
-            lhs_board.place_card_by_id(card, street_id)
+# class OFCEnvironment(object):
+#     """Handle OFC game state and rewards."""
 
-            card = deck.pop()
-            street_id = self.rhs_agent.place_new_card(card, rhs_board)
-            rhs_board.place_card_by_id(card, street_id)
+#     def __init__(self, lhs_agent, rhs_agent):
+#         self.lhs_agent = lhs_agent
+#         self.rhs_agent = rhs_agent
 
-        lhs_royalties = lhs_board.get_royalties()
-        rhs_royalties = rhs_board.get_royalties()
+#     def play_game(self):
+#         """Rollout one OFC game and return the LHS score and LHS/RHS boards."""
+#         deck = DeckGenerator.new_deck()
 
-        if lhs_board.is_foul() and rhs_board.is_foul():
-            lhs_score = 0
+#         lhs_board = OFCBoard()
+#         rhs_board = OFCBoard()
 
-        elif lhs_board.is_foul():
-            lhs_score = (-1 * rhs_royalties) - 6
+#         lhs_start = deck[0:5]
+#         rhs_start = deck[6:11]
 
-        elif rhs_board.is_foul():
-            lhs_score = lhs_royalties + 6
+#         # Starting hand one card at a time for now. In future, give
+#         # all cards at once
+#         for i in xrange(5):
+#             card = lhs_start[i]
+#             street_id = self.lhs_agent.place_new_card(card, lhs_board)
+#             lhs_board.place_card_by_id(card, street_id)
 
-        else:
-            exch = self.calculate_scoop(lhs_board,
-                                        rhs_board)
-            lhs_score = exch + lhs_royalties - rhs_royalties
+#             card = rhs_start[i]
+#             street_id = self.rhs_agent.place_new_card(card, rhs_board)
+#             rhs_board.place_card_by_id(card, street_id)
 
-        return lhs_score, lhs_board, rhs_board
+#         # Eight cards one at a time
+#         for i in xrange(8):
+#             card = deck.pop()
+#             street_id = self.lhs_agent.place_new_card(card, lhs_board)
+#             lhs_board.place_card_by_id(card, street_id)
 
-    def calculate_scoop(self, lhs_board, rhs_board):
-        lhs_won = 0
+#             card = deck.pop()
+#             street_id = self.rhs_agent.place_new_card(card, rhs_board)
+#             rhs_board.place_card_by_id(card, street_id)
 
-        lhs_won += self.calculate_street(lhs_board.front, rhs_board.front)
-        lhs_won += self.calculate_street(lhs_board.mid, rhs_board.mid)
-        lhs_won += self.calculate_street(lhs_board.back, rhs_board.back)
+#         lhs_royalties = lhs_board.get_royalties()
+#         rhs_royalties = rhs_board.get_royalties()
 
-        if lhs_won in [3, -3]:   # Scoop, one way or the other
-            lhs_won = lhs_won * 2
+#         if lhs_board.is_foul() and rhs_board.is_foul():
+#             lhs_score = 0
 
-        return lhs_won
+#         elif lhs_board.is_foul():
+#             lhs_score = (-1 * rhs_royalties) - 6
 
-    @staticmethod
-    def calculate_street(lhs_hand, rhs_hand):
-        lhs_rank = lhs_hand.get_rank()
-        rhs_rank = rhs_hand.get_rank()
+#         elif rhs_board.is_foul():
+#             lhs_score = lhs_royalties + 6
 
-        if lhs_rank < rhs_rank:
-            return 1
-        if rhs_rank < lhs_rank:
-            return -1
-        return 0
+#         else:
+#             exch = self.calculate_scoop(lhs_board,
+#                                         rhs_board)
+#             lhs_score = exch + lhs_royalties - rhs_royalties
+
+#         return lhs_score, lhs_board, rhs_board
+
+#     def calculate_scoop(self, lhs_board, rhs_board):
+#         lhs_won = 0
+
+#         lhs_won += self.calculate_street(lhs_board.front, rhs_board.front)
+#         lhs_won += self.calculate_street(lhs_board.mid, rhs_board.mid)
+#         lhs_won += self.calculate_street(lhs_board.back, rhs_board.back)
+
+#         if lhs_won in [3, -3]:   # Scoop, one way or the other
+#             lhs_won = lhs_won * 2
+
+#         return lhs_won
+
+#     @staticmethod
+#     def calculate_street(lhs_hand, rhs_hand):
+#         lhs_rank = lhs_hand.get_rank()
+#         rhs_rank = rhs_hand.get_rank()
+
+#         if lhs_rank < rhs_rank:
+#             return 1
+#         if rhs_rank < lhs_rank:
+#             return -1
+#         return 0
+

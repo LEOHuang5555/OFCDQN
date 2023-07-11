@@ -71,7 +71,12 @@ class RoyaltyCalculator(object):
             return 0 # no pairs
 
         if count == 2:
+            # 0:2, 1:3 ,..., 4:6,..., 11:K, 12:A
+            # 66 -> 1 units
+            # AA -> 9 units
             return max(0, rank - 3) # one pair
 
         if count == 3:
+            # 222 -> 10 units
+            # AAA -> 22 units
             return 10 + rank # Three-of-a-kind

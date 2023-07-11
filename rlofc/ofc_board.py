@@ -13,16 +13,13 @@ class OFCHand(object):
     """
 
     def __init__(self, card_strs):
-        self.cards = [Card.new(x) for x in card_strs]
+        # self.cards = [Card.new(x) for x in card_strs]
+        self.cards = []
 
     def add_card(self, new_card_str):
-        # if len(new_card_str)==1:
-        # print(new_card_str)
-        self.cards.append(Card.new(new_card_str))
-
-        # else:
-        #     for i in new_card_str:
-        #         self.cards.append(Card.new(i))
+        # self.cards.append(Card.new(new_card_str))
+        self.cards.append(new_card_str)
+        
 
     def length(self):
         return len(self.cards)
@@ -44,11 +41,20 @@ class OFCBoard(object):
 
     def pretty(self):
         print('Front:')
-        Card.print_pretty_cards(self.front.cards)
+        try:
+            Card.print_pretty_cards(self.front.cards)
+        except:
+            print(self.front.cards)
         print('Mid:')
-        Card.print_pretty_cards(self.mid.cards)
+        try:
+            Card.print_pretty_cards(self.mid.cards)
+        except:
+            print(self.mid.cards)
         print('Back:')
-        Card.print_pretty_cards(self.back.cards)
+        try:
+            Card.print_pretty_cards(self.back.cards)
+        except:
+            print(self.back.cards)
 
     def get_royalties(self):
         if not self.is_complete():
@@ -119,7 +125,7 @@ class OFCBoard(object):
                 self.mid.get_rank() >= \
                 self.back.get_rank():
             
-            if self.front.get_rank() >= 2468.0:
+            if self.front.get_rank() < 2468.0:
                 # 2468: 222 three of a kind. 
                 next_open = 17
             
@@ -134,7 +140,7 @@ class OFCBoard(object):
                 next_open = 15
             
             elif self.front.get_rank() <= 3545.8788 and self.front.get_rank() > 2468.0:
-                # 3545.8788: AA pair + 2c
+                # 3545.8788: AA pair + 2c 
                 # 2468.0: 222 three of a kind.
                 next_open = 16
             
