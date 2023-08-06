@@ -296,7 +296,7 @@ def get_max_hand_list(input_hand_list):
             temp_straight_list =  [x+8-i for x in straight_list]
         straight_fit_num = 0
         miss_num_list = []
-        bbb = temp_straight_list.copy()
+
         for s in temp_straight_list:
             b = 15 -s -1
             if(b == 13):
@@ -323,19 +323,10 @@ def get_max_hand_list(input_hand_list):
                 if(stra_num ==  int(h[0:len(h)-1])):
                     fit_hand_list.append(h)
             straight_combo_list_all.append(fit_hand_list)
-        missing_count = 0
-        for i in range(0,len(straight_combo_list_all)):
-            if(len(straight_combo_list_all[i]) == 0):
-                missing_count = missing_count +1
-        gost_use_count = 0
-        if(missing_count<= len(gost_list)):
-            for i in range(0,len(straight_combo_list_all)):
-                if(len(straight_combo_list_all[i]) == 0):
-                    straight_combo_list_all[i].append(gost_list[gost_use_count])
-                    gost_use_count = gost_use_count +1
-        all_stright_combination =    list(itertools.product(straight_combo_list_all[0],straight_combo_list_all[1],straight_combo_list_all[2],straight_combo_list_all[3],straight_combo_list_all[4]))
+        
+        all_stright_combination =    list(itertools.product(*straight_combo_list_all))
         for a in all_stright_combination:
-            max_straight_list.append([bbb,a])
+            max_straight_list.append([temp_straight_list,a])
 
 
 
@@ -352,6 +343,10 @@ def get_max_hand_list(input_hand_list):
     max_two_pair_list = []
     two_pair_combo_list_mix = list(combinations(max_pair_list,2))
     for two_pair in two_pair_combo_list_mix:
+        if('gg' in two_pair[0][1] and 'gg'  in two_pair[1][1]):
+            continue
+        if('GG' in two_pair[0][1] and 'GG'  in two_pair[1][1]):
+            continue
         num_1 = two_pair[0][0:len(two_pair[0])-1][0][0]
         num_2 = two_pair[1][0:len(two_pair[1])-1][0][0]
         h_list = [str(num_1)]*4
@@ -455,11 +450,15 @@ def get_all_fantasy_combo(hand_list):
                         hand_list_copy.remove(f_hand)
                 left_hand_list = hand_list_copy
                 max_hand_list_1 = get_max_hand_list(left_hand_list.copy())
+                # print('max_hanb_list',max_hand_list_1)
                 # max_hand_list 必須由大到小
                 for j in range(0, len(max_hand_list_1)):
                     for k in range(0,len(max_hand_list_1[j][1])):
                         temp_middle = max_hand_list_1[j][1][k]
                         left_hand_list_2 = left_hand_list.copy()
+                        # print('last',last)
+                        # print(temp_middle)
+                        # print(left_hand_list_2)
                         for card_temp_middle in temp_middle[1]:
                             # print('j',j)
                             # print('k',k)

@@ -1,6 +1,6 @@
 import random
 # from rlofc.deck_generator import DeckGenerator
-# from rlofc.ofc_board import OFCBoard
+from rlofc.ofc_board import OFCBoard
 from treys import Card
 from .ofc_evaluator import OFCEvaluator
 from rlofc.deck_generator import  DeckGenerator
@@ -42,7 +42,7 @@ class OFCEnv(object):
         self.deck = DeckGenerator.new_deck()
         if self.jocker:
             # Add two jockers to the pool. 
-            self.deck += ['G', 'g']
+            self.deck += ['GG', 'gg']
             # Shuffle the pool.
             random.shuffle(self.deck)
 
@@ -84,12 +84,10 @@ class OFCEnv(object):
                 self.plyr_cards = sorted(self.deck[0:self.plyr_fantasy])
                 self.oppo_cards = sorted(self.deck[self.plyr_fantasy:self.plyr_fantasy+self.oppo_fantasy])
 
-                self.plyr_goes_first = random.choice([0, 1])
+                self.plyr_goes_first = 0
 
                 self.execute_game()
-                # place_by_fantasy_rule
-                # self.plyr_board.place_card_by_fantasy_rule(self.plyr_cards)
-                # self.oppo_board.place_card_by_fantasy_rule(self.oppo_cards)
+
                 
             else:
                 # normal condition
@@ -111,6 +109,7 @@ class OFCEnv(object):
             self.drop_card = []
             self.game_over = False
             self.reward = 0
+            self.current_card = []
 
             if self.plyr_fantasy > 0 and self.oppo_fantasy == 0 and self.oppo1_fantasy == 0:
                 # player in state of fantasy
@@ -189,13 +188,9 @@ class OFCEnv(object):
                 self.oppo_cards = sorted(self.deck[self.plyr_fantasy:(self.plyr_fantasy + self.oppo_fantasy)])
                 self.oppo1_cards = sorted(self.deck[(self.plyr_fantasy + self.oppo_fantasy):(self.oppo_fantasy + self.oppo1_fantasy + self.plyr_fantasy)])
 
-                # self.plyr_goes_first = 1
+                self.plyr_goes_first = 0
 
-                # place_by_fantasy_rule
-                self.plyr_board.place_card_by_fantasy_rule(self.plyr_cards)
-                self.oppo_board.place_card_by_fantasy_rule(self.oppo_cards)
-                self.oppo1_board.place_card_by_fantasy_rule(self.oppo1_cards)
-
+                self.execute_game()
                 
             else:
                 # normal condition
@@ -224,38 +219,44 @@ class OFCEnv(object):
         self.current_card.remove(self.current_card[drop])
         self.i += 3
 
-    def step(self, action):
+    def step(self, action:list = None):
         """Advance the game state by one decision."""
         if self.num_oppo == 1:
             if self.board_sum(0) == 13 and self.board_sum(1) == 13:
                 self.execute_endgame()
 
             else:
-                self.execute_game()
+                self.execute_game(action)
 
         else:
             if self.board_sum(0) == 13 and self.board_sum(1) == 13 and self.board_sum(2) == 13:
                 self.execute_endgame()
 
             else:
-                self.execute_game()
+                self.execute_game(action)
         
 
         
     
     def board_sum(self, player_code):
         if player_code == 0:
-            return self.plyr_board.front.length()+self.plyr_board.mid.length()+self.plyr_board.back.length()
+            # oppo
+            return self.oppo_board.front.length()+self.oppo_board.mid.length()+self.oppo_board.back.length()
+            
         
         elif player_code == 1:
-            return self.oppo_board.front.length()+self.oppo_board.mid.length()+self.oppo_board.back.length()
-        
+            # player
+            return self.plyr_board.front.length()+self.plyr_board.mid.length()+self.plyr_board.back.length()
+             
         else:
+            # oppo1
             return self.oppo1_board.front.length()+self.oppo1_board.mid.length()+self.oppo1_board.back.length()
 
 
     def observe(self):
         """Return information about the game state."""
+        # if self.current_card is None:
+        #     self.current_card = []
         if self.num_oppo == 1:
             game_state = (self.plyr_board,
                         self.oppo_board,
@@ -287,18 +288,24 @@ class OFCEnv(object):
         if not self.oppo_board.is_complete():
             if self.oppo_fantasy > 0:
                 self.oppo_board.place_card_by_fantasy_rule(self.oppo_cards)
+                # change
+                self.next_player()
                 return
 
             if len(self.oppo_cards) == 0:
                 self.draw()
-                self.oppo_cards = self.current_card
+                self.oppo_cards = self.current_card.copy()
 
             while len(self.oppo_cards) > 0:
                 oppo_card = self.oppo_cards.pop()
                 free_streets = self.oppo_board.get_free_street_indices()
-                # if action
-                oppo_action = random.choice(free_streets)  # For now!
-                # oppo_action = 2
+
+                if action is None:
+                    oppo_action = random.choice(free_streets)  # For now!
+
+                else:
+                    oppo_action = action.pop()
+
                 self.oppo_board.place_card_by_id(oppo_card, oppo_action)
 
             # change
@@ -308,17 +315,23 @@ class OFCEnv(object):
         if not self.oppo1_board.is_complete():
             if self.oppo1_fantasy > 0:
                 self.oppo1_board.place_card_by_fantasy_rule(self.oppo1_cards)
+                self.next_player()
                 return 
 
             if len(self.oppo1_cards) == 0:
                 self.draw()
-                self.oppo1_cards = self.current_card
+                self.oppo1_cards = self.current_card.copy()
 
             while len(self.oppo1_cards) > 0:
                 oppo1_cards = self.oppo1_cards.pop()
                 free_streets = self.oppo1_board.get_free_street_indices()
-                # if action
-                oppo1_action = random.choice(free_streets)  # For now!
+
+                if action is None:
+                    oppo1_action = random.choice(free_streets)  # For now!
+
+                else:
+                    oppo1_action = action.pop()
+                
                 # oppo_action = 2
                 self.oppo1_board.place_card_by_id(oppo1_cards, oppo1_action)
 
@@ -330,36 +343,48 @@ class OFCEnv(object):
         if not self.plyr_board.is_complete():
             if self.plyr_fantasy > 0:
                 self.plyr_board.place_card_by_fantasy_rule(self.plyr_cards)
+                self.next_player()
                 return
             
             if len(self.plyr_cards) == 0:
                 self.draw()
-                self.plyr_cards = self.current_card
+                self.plyr_cards = self.current_card.copy()
 
             while len(self.plyr_cards) > 0:
                 plyr_card = self.plyr_cards.pop()
                 free_streets = self.plyr_board.get_free_street_indices()
-                plyr_action = random.choice(free_streets)  # For now!
-                # oppo_action = 2
+
+                if action is None:
+                    plyr_action = random.choice(free_streets) # For now!
+
+                else:
+                    plyr_action = action.pop()
+
                 self.plyr_board.place_card_by_id(plyr_card, plyr_action)
 
             self.next_player()
 
-    def execute_game(self):
+    def execute_game(self, action=None):
         if self.plyr_goes_first == 0:
             # oppo goes first
-            self.current_card = self.oppo_cards
-            self.execute_opponent_turn()
+            if self.oppo_fantasy ==0:
+                self.current_card = self.oppo_cards
+
+            self.execute_opponent_turn(action)
         
         elif self.plyr_goes_first == 2:
             # oppo1 goes first
-            self.current_card = self.oppo1_cards
-            self.execute_opponent1_turn()
+            if self.oppo1_fantasy == 0:
+                self.current_card = self.oppo1_cards
+
+            self.execute_opponent1_turn(action)
         
         else:
             # I go first
-            self.current_card = self.plyr_cards
-            self.execute_my_turn()
+            if self.plyr_fantasy == 0:
+                self.current_card = self.plyr_cards
+
+            self.execute_my_turn(action)
 
     def next_player(self):
         if self.num_oppo == 1:
@@ -493,10 +518,21 @@ class OFCEnv(object):
     def execute_endgame(self):
         self.reward = self.calculate_score()
         self.game_over = True
-        self.plyr_fantasy = self.plyr_board.is_fantasy()
-        self.oppo_fantasy = self.oppo_board.is_fantasy()
+        if self.plyr_fantasy > 0:
+            self.plyr_fantasy = self.plyr_board.is_refantasy()
+        else:
+            self.plyr_fantasy = self.plyr_board.is_fantasy()
+
+        if self.oppo_fantasy > 0:
+            self.oppo_fantasy = self.oppo_board.is_refantasy()
+        else:
+            self.oppo_fantasy = self.oppo_board.is_fantasy()
+        
         if self.num_oppo == 2:
-            self.oppo1_fantasy = self.oppo1_board.is_fantasy()
+            if self.oppo1_fantasy > 0:
+                self.oppo1_fantasy = self.oppo1_board.is_refantasy()
+            else:
+                self.oppo1_fantasy = self.oppo1_board.is_fantasy()
 
 
 
@@ -542,78 +578,83 @@ class OFCEnv(object):
         return score
     
     def calculate_joker(self):
+        
         # jocker in the front line
-        if 'g' in self.plyr_board.front.cards or 'G' in  self.plyr_board.front.cards:
-            if 'g' in self.plyr_board.mid.cards or 'G' in self.plyr_board.mid.cards:
+        if 'gg' in self.plyr_board.front.cards or 'GG' in  self.plyr_board.front.cards:
+            if 'gg' in self.plyr_board.mid.cards or 'GG' in self.plyr_board.mid.cards:
                 self.plyr_board.mid.cards = get_max_hand(self.plyr_board.mid.cards ,self.plyr_board.back.cards)
                 self.plyr_board.front.cards = get_max_hand(self.plyr_board.front.cards ,self.plyr_board.mid.cards)
             else:
                 self.plyr_board.front.cards = get_max_hand(self.plyr_board.front.cards ,self.plyr_board.mid.cards)
 
         # jocker in the middle line
-        if 'g' in self.plyr_board.mid.cards or 'G' in  self.plyr_board.mid.cards:
-            if 'g' in self.plyr_board.back.cards or 'G' in self.plyr_board.back.cards:
+        if 'gg' in self.plyr_board.mid.cards or 'GG' in  self.plyr_board.mid.cards:
+            if 'gg' in self.plyr_board.back.cards or 'GG' in self.plyr_board.back.cards:
                 self.plyr_board.back.cards = get_max_hand(self.plyr_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
                 self.plyr_board.mid.cards = get_max_hand(self.plyr_board.mid.cards, self.plyr_board.back.cards)
             else:
                 self.plyr_board.mid.cards = get_max_hand(self.plyr_board.mid.cards ,self.plyr_board.back.cards)
-
-        # jocker in the back line
-        if 'g' in self.plyr_board.back.cards or 'G' in self.plyr_board.back.cards:
-            self.plyr_board.back.cards = get_max_hand(self.plyr_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
         
+        # jocker in the back line
+        if 'gg' in self.plyr_board.back.cards or 'GG' in self.plyr_board.back.cards:
+            self.plyr_board.back.cards = get_max_hand(self.plyr_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
+
+        if self.plyr_fantasy == 0:
+            self.plyr_board.front.cards = [Card.new(i) for i in self.plyr_board.front.cards]
+            self.plyr_board.mid.cards = [Card.new(i) for i in self.plyr_board.mid.cards]
+            self.plyr_board.back.cards = [Card.new(i) for i in self.plyr_board.back.cards]
+
+    
         # jocker in the front line
-        if 'g' in self.oppo_board.front.cards or 'G' in  self.oppo_board.front.cards:
-            if 'g' in self.oppo_board.mid.cards or 'G' in self.oppo_board.mid.cards:
+        if 'gg' in self.oppo_board.front.cards or 'GG' in  self.oppo_board.front.cards:
+            if 'gg' in self.oppo_board.mid.cards or 'GG' in self.oppo_board.mid.cards:
                 self.oppo_board.mid.cards = get_max_hand(self.oppo_board.mid.cards ,self.oppo_board.back.cards)
                 self.oppo_board.front.cards = get_max_hand(self.oppo_board.front.cards ,self.oppo_board.mid.cards)
             else:
                 self.oppo_board.front.cards = get_max_hand(self.oppo_board.front.cards ,self.oppo_board.mid.cards)
-
+    
         # jocker in the middle line
-        if 'g' in self.oppo_board.mid.cards or 'G' in  self.oppo_board.mid.cards:
-            if 'g' in self.oppo_board.back.cards or 'G' in self.oppo_board.back.cards:
+        if 'gg' in self.oppo_board.mid.cards or 'GG' in  self.oppo_board.mid.cards:
+            if 'gg' in self.oppo_board.back.cards or 'GG' in self.oppo_board.back.cards:
                 self.oppo_board.back.cards = get_max_hand(self.oppo_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
                 self.oppo_board.mid.cards = get_max_hand(self.oppo_board.mid.cards, self.oppo_board.back.cards)
             else:
                 self.oppo_board.mid.cards = get_max_hand(self.oppo_board.mid.cards ,self.oppo_board.back.cards)
         
         # jocker in the back line
-        if 'g' in self.oppo_board.back.cards or 'G' in self.oppo_board.back.cards:
+        if 'gg' in self.oppo_board.back.cards or 'GG' in self.oppo_board.back.cards:
             self.oppo_board.back.cards = get_max_hand(self.oppo_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
 
-        self.plyr_board.front.cards = [Card.new(i) for i in self.plyr_board.front.cards]
-        self.plyr_board.mid.cards = [Card.new(i) for i in self.plyr_board.mid.cards]
-        self.plyr_board.back.cards = [Card.new(i) for i in self.plyr_board.back.cards]
-        self.oppo_board.front.cards = [Card.new(i) for i in self.oppo_board.front.cards]
-        self.oppo_board.mid.cards = [Card.new(i) for i in self.oppo_board.mid.cards]
-        self.oppo_board.back.cards = [Card.new(i) for i in self.oppo_board.back.cards]
+        if self.oppo_fantasy == 0:   
+            self.oppo_board.front.cards = [Card.new(i) for i in self.oppo_board.front.cards]
+            self.oppo_board.mid.cards = [Card.new(i) for i in self.oppo_board.mid.cards]
+            self.oppo_board.back.cards = [Card.new(i) for i in self.oppo_board.back.cards]
             
         if self.num_oppo == 2:
             # jocker in the front line
-            if 'g' in self.oppo1_board.front.cards or 'G' in  self.oppo1_board.front.cards:
-                if 'g' in self.oppo1_board.mid.cards or 'G' in self.oppo1_board.mid.cards:
+            if 'gg' in self.oppo1_board.front.cards or 'GG' in  self.oppo1_board.front.cards:
+                if 'gg' in self.oppo1_board.mid.cards or 'GG' in self.oppo1_board.mid.cards:
                     self.oppo1_board.mid.cards = get_max_hand(self.oppo1_board.mid.cards ,self.oppo1_board.back.cards)
                     self.oppo1_board.front.cards = get_max_hand(self.oppo1_board.front.cards ,self.oppo1_board.mid.cards)
                 else:
                     self.oppo1_board.front.cards = get_max_hand(self.oppo1_board.front.cards ,self.oppo1_board.mid.cards)
 
             # jocker in the middle line
-            if 'g' in self.oppo1_board.mid.cards or 'G' in  self.oppo1_board.mid.cards:
-                if 'g' in self.oppo1_board.back.cards or 'G' in self.oppo1_board.back.cards:
+            if 'gg' in self.oppo1_board.mid.cards or 'GG' in  self.oppo1_board.mid.cards:
+                if 'gg' in self.oppo1_board.back.cards or 'GG' in self.oppo1_board.back.cards:
                     self.oppo1_board.back.cards = get_max_hand(self.oppo1_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
                     self.oppo1_board.mid.cards = get_max_hand(self.oppo1_board.mid.cards, self.oppo1_board.back.cards)
                 else:
                     self.oppo1_board.mid.cards = get_max_hand(self.oppo1_board.mid.cards ,self.oppo1_board.back.cards)
             
             # jocker in the back line
-            if 'g' in self.oppo1_board.back.cards or 'G' in self.oppo1_board.back.cards:
+            if 'gg' in self.oppo1_board.back.cards or 'GG' in self.oppo1_board.back.cards:
                 self.oppo1_board.back.cards = get_max_hand(self.oppo1_board.back.cards, ['Ts', 'Js', 'Qs', 'Ks', 'As'])
 
-
-            self.oppo1_board.front.cards = [Card.new(i) for i in self.oppo1_board.front.cards]
-            self.oppo1_board.mid.cards = [Card.new(i) for i in self.oppo1_board.mid.cards]
-            self.oppo1_board.back.cards = [Card.new(i) for i in self.oppo1_board.back.cards]
+            if self.oppo1_fantasy == 0:
+                self.oppo1_board.front.cards = [Card.new(i) for i in self.oppo1_board.front.cards]
+                self.oppo1_board.mid.cards = [Card.new(i) for i in self.oppo1_board.mid.cards]
+                self.oppo1_board.back.cards = [Card.new(i) for i in self.oppo1_board.back.cards]
         
 
 
@@ -672,18 +713,34 @@ def smaller_or_not(current_hand_list,limit_hand_list):
     else:
         return False
 
-def get_max_hand(input_hand_list,limit_hand_list):
+def bigger_or_not(current_hand_list,max_hand_list):
+    current_hand_score = evaluator.evaluate([],[Card.new(i) for i in current_hand_list])
+    max_hand_score = evaluator.evaluate([],[Card.new(i) for i in max_hand_list])
+    if current_hand_score < max_hand_score:
+        return True
+    else:
+        return False
+
+def smaller_or_not(current_hand_list, limit_hand_list):
+    current_hand_score = evaluator.evaluate([],[Card.new(i) for i in current_hand_list])
+    limit_hand_score = evaluator.evaluate([],[Card.new(i) for i in limit_hand_list])
+    if current_hand_score > limit_hand_score:
+        return True
+    else:
+        return False
+
+def get_max_hand(input_hand_list, limit_hand_list):
     hand_list = input_hand_list.copy()
     gost_list = []
     for hand in hand_list:
-        if(hand == 'G' or hand == 'g'):
+        if(hand == 'GG' or hand == 'gg'):
             gost_list.append(hand)
 
-    if 'g' in hand_list:
-        hand_list.remove("g")
+    if 'gg' in hand_list:
+        hand_list.remove("gg")
     
-    if 'G' in hand_list:
-        hand_list.remove("G")
+    if 'GG' in hand_list:
+        hand_list.remove("GG")
 
     all_cards = [
     '2s', '3s', '4s', '5s', '6s', '7s', '8s', '9s', 'Ts', 'Js', 'Qs', 'Ks', 'As',
@@ -695,26 +752,32 @@ def get_max_hand(input_hand_list,limit_hand_list):
         max_hand_list = ['2c','3c','4c','5c','7d']
         for h in all_cards:
             if(h in hand_list):
-                break
+                continue
             a_list = hand_list.copy()
             a_list.append(h)
             #print(a_list)
             #print(max_hand_list)
             #print(bigger_or_not(a_list,max_hand_list))
             if(bigger_or_not(a_list,max_hand_list) and smaller_or_not(a_list,limit_hand_list)):
+                #print(a_list)
                 max_hand_list = a_list
         return max_hand_list
     elif(len(gost_list) == 2):
         max_hand_list = ['2c','3c','4c','5c','7d']
         for h in all_cards:
             for h1 in all_cards:
+                if(h in hand_list or h1 in hand_list):
+                    continue
+                if(h == h1):
+                    continue
                 a_list = hand_list.copy()
                 a_list.append(h)
                 a_list.append(h1)
+                # print(a_list)
                 if(bigger_or_not(a_list,max_hand_list) and smaller_or_not(a_list,limit_hand_list)):
+                    print(a_list)
                     max_hand_list = a_list
         return max_hand_list
-
 
 # class OFCEnvironment(object):
 #     """Handle OFC game state and rewards."""
