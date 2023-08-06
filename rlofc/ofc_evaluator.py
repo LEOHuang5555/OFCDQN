@@ -1,6 +1,8 @@
 import _pickle as pickle
 from treys import Card, Evaluator
 from treys.lookup import LookupTable
+from .fantasy import get_all_fantasy_combo, get_max_hand_list
+# from .ofc_board import get_max_hand, tranfer_cards_fantasy, tranfer_int_cards
 
 class StrToBytes:
     def __init__ (self, fileobj):
@@ -10,7 +12,7 @@ class StrToBytes:
         return self.fileobj.read(size).encode()
     
     def readline (self, size=-1):
-        return self.fileobj. readline(size).encode()
+        return self.fileobj.readline(size).encode()
     
 FRONT_LOOKUP = pickle.load(StrToBytes(open("./res/front_lookup.p", 'r')))
 
